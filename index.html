@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ㄚ昇烤鵝烤鴨餐車｜現場取貨付現預訂清單</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts (Noto Sans TC) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- 引入 Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8f7f4;
+            color: #292524;
+        }
+        /* 自訂捲軸與微動畫 */
+        .fade-in {
+            animation: fadeIn 0.35s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 列印樣式設定：僅列印憑證區塊 */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #receipt-print-area, #receipt-print-area * {
+                visibility: visible;
+            }
+            #receipt-print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none !important;
+                border: 1px solid #d6d3d1 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- 模擬 WordPress 網站頂部導覽列 (極簡風格，無購物車圖示、無會員登入) -->
+    <header class="bg-white border-b border-stone-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-sm">
+                    <i data-lucide="croissant" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <span class="font-bold text-lg tracking-tight text-stone-800 block leading-none">ㄚ昇烤鵝烤鴨餐車</span>
+                    <span class="text-[11px] text-stone-500 font-medium">WordPress 單頁表單預訂模式</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 text-xs font-medium bg-amber-50 text-amber-800 px-3 py-1.5 rounded-full border border-amber-200">
+                <i data-lucide="store" class="w-3.5 h-3.5 text-amber-600"></i>
+                <span>僅限現場取貨付現</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區塊 -->
+    <main class="max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 flex-grow">
+
+        <!-- 步驟指示器 -->
+        <div class="mb-6 flex items-center justify-center gap-3 text-sm">
+            <div id="step-badge-1" class="flex items-center gap-1.5 font-bold text-amber-700 bg-amber-100/80 px-3.5 py-1.5 rounded-full transition-colors">
+                <span class="w-5 h-5 rounded-full bg-amber-600 text-white text-xs flex items-center justify-center">1</span>
+                <span>勾選商品與填單</span>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-stone-400"></i>
+            <div id="step-badge-2" class="flex items-center gap-1.5 font-medium text-stone-400 bg-stone-100 px-3.5 py-1.5 rounded-full transition-colors">
+                <span class="w-5 h-5 rounded-full bg-stone-300 text-white text-xs flex items-center justify-center">2</span>
+                <span>產生現場付現憑證</span>
+            </div>
+        </div>
+
+        <!-- ==================== 階段一：表單選購畫面 ==================== -->
+        <div id="order-form-view" class="fade-in space-y-6">
+            
+            <!-- 店鋪公告橫幅 -->
+            <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-stone-200/80 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <span class="inline-block text-xs font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md mb-2">
+                            快閃店 / 實體門市預留單
+                        </span>
+                        <h1 class="text-2xl sm:text-3xl font-bold text-stone-900 mb-2">
+                            今日出爐・線上預訂清單
+                        </h1>
+                        <p class="text-stone-600 text-sm sm:text-base leading-relaxed">
+                            <strong class="text-stone-800">免註冊會員、無需線上刷卡！</strong>直接在下方點選您想要的品項與數量並送出清單，到現場出示憑證<strong class="text-amber-700">付現取貨</strong>即可。
+                        </p>
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-stone-100 flex flex-wrap gap-4 text-xs text-stone-500">
+                    <span class="flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-600"></i> 取貨地點：竹北華興五街129號</span>
+                    <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5 text-amber-600"></i> 每日 15:30 - 19:00 開放取貨</span>
+                </div>
+            </div>
+
+            <!-- 錯誤提示訊息框 (取代 alert) -->
+            <div id="error-banner" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3 text-sm font-medium">
+                <i data-lucide="alert-circle" class="w-5 h-5 text-red-500 shrink-0"></i>
+                <span id="error-message">請至少選擇一項商品並填寫必填欄位。</span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- 左側：商品勾選清單 (模擬 Fluent Forms 商品欄位) -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="flex items-center justify-between px-1">
+                        <h2 class="text-lg font-bold text-stone-800 flex items-center gap-2">
+                            <i data-lucide="list-checks" class="w-5 h-5 text-amber-600"></i>
+                            第一步：選擇預訂商品
+                        </h2>
+                        <span class="text-xs text-stone-500">點擊 + / - 調整數量</span>
+                    </div>
+
+                    <!-- 商品卡片容器 (由 JS 動態渲染) -->
+                    <div id="product-list" class="space-y-3">
+                        <!-- JS 動態插入 -->
+                    </div>
+                </div>
+
+                <!-- 右側：即時金額明細 + 消費者極簡資料表單 -->
+                <div class="lg:col-span-5 space-y-5 lg:sticky lg:top-24">
+                    
+                    <!-- 即時預覽清單與總金額計算區 -->
+                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-stone-200">
+                        <div class="flex items-center justify-between pb-3 border-b border-stone-100">
+                            <h3 class="font-bold text-stone-800 flex items-center gap-2">
+                                <i data-lucide="receipt" class="w-4 h-4 text-amber-600"></i>
+                                已選購明細預覽
+                            </h3>
+                            <button type="button" onclick="resetQuantities()" class="text-xs text-stone-400 hover:text-stone-600 underline">
+                                清空重選
+                            </button>
+                        </div>
+
+                        <!-- 動態已選商品列表 -->
+                        <div id="selected-summary-list" class="py-3 space-y-2.5 min-h-[80px] flex flex-col justify-center">
+                            <p class="text-sm text-stone-400 text-center py-4">尚未選擇任何商品，請從左側點選</p>
+                        </div>
+
+                        <!-- 總金額加總區 -->
+                        <div class="pt-3 border-t border-dashed border-stone-200 flex items-baseline justify-between">
+                            <div>
+                                <span class="text-sm font-medium text-stone-600">現場應付現金總額</span>
+                                <span class="block text-[11px] text-stone-400">共 <strong id="total-items-count" class="text-stone-600">0</strong> 件商品</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs font-bold text-amber-700 mr-0.5">NT$</span>
+                                <span id="total-price" class="text-2xl font-bold text-amber-600 tracking-tight">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 極簡免會員資料填寫表單 -->
+                    <form id="reservation-form" onsubmit="handleFormSubmit(event)" class="bg-white rounded-2xl p-5 shadow-sm border border-stone-200 space-y-4" novalidate>
+                        <h3 class="font-bold text-stone-800 flex items-center gap-2 pb-2 border-b border-stone-100">
+                            <i data-lucide="user-check" class="w-4 h-4 text-amber-600"></i>
+                            第二步：填寫取貨人資訊（免登入）
+                        </h3>
+
+                        <div>
+                            <label for="customer-name" class="block text-sm font-medium text-stone-700 mb-1">
+                                您的姓名 / 稱呼 <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="customer-name" required placeholder="例如：陳小姐 / 林先生"
+                                class="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition">
+                        </div>
+
+                        <div>
+                            <label for="customer-phone" class="block text-sm font-medium text-stone-700 mb-1">
+                                聯絡手機 <span class="text-red-500">*</span>
+                            </label>
+                            <input type="tel" id="customer-phone" required placeholder="例如：0912-345-678（現場核對用）"
+                                class="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition">
+                        </div>
+
+                        <div>
+                            <label for="pickup-time" class="block text-sm font-medium text-stone-700 mb-1">
+                                預計到現場取貨時段 <span class="text-red-500">*</span>
+                            </label>
+                            <select id="pickup-time" required
+                                class="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition">
+                                <option value="今日 15:30 - 16:00">今日 15:30 - 16:00</option>
+                                <option value="今日 16:00 - 16:30" selected>今日 16:00 - 16:30</option>
+                                <option value="今日 16:30 - 17:00">今日 16:30 - 17:00</option>
+                                <option value="今日 17:00 - 17:30">今日 17:00 - 17:30</option>
+                                <option value="今日 17:30 - 18:00">今日 17:30 - 18:00</option>
+                                <option value="今日 18:00 - 18:30">今日 18:00 - 18:30</option>
+                                <option value="今日 18:30 - 19:00">今日 18:30 - 19:00</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="customer-note" class="block text-sm font-medium text-stone-700 mb-1">
+                                備註事項 <span class="text-xs text-stone-400 font-normal">(選填)</span>
+                            </label>
+                            <textarea id="customer-note" rows="2" placeholder="例如：需要分開包裝、自備環保袋..."
+                                class="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition"></textarea>
+                        </div>
+
+                        <button type="submit"
+                            class="w-full py-3.5 px-4 bg-amber-600 hover:bg-amber-700 active:scale-[0.99] text-white font-bold rounded-xl shadow-md shadow-amber-600/20 transition flex items-center justify-center gap-2 text-base">
+                            <i data-lucide="file-check-2" class="w-5 h-5"></i>
+                            <span>產生現場取貨清單</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 階段二：送出後的「現場付現憑證」與「店家後台預覽」 ==================== -->
+        <div id="receipt-view" class="hidden fade-in space-y-8">
+            
+            <!-- 消費者端：現場付現憑證 (收據列表單) -->
+            <div id="receipt-print-area" class="bg-white rounded-2xl shadow-md border border-stone-200 overflow-hidden max-w-2xl mx-auto">
+                <!-- 憑證頂部狀態列 -->
+                <div class="bg-emerald-600 text-white px-6 py-5 text-center">
+                    <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2.5">
+                        <i data-lucide="check" class="w-7 h-7 text-white"></i>
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-bold">預訂清單已建立！</h2>
+                    <p class="text-emerald-100 text-sm mt-1">請截圖保存此畫面，到現場出示給店員並付現取貨</p>
+                </div>
+
+                <!-- 憑證核心編號與提示 -->
+                <div class="p-6 sm:p-8 space-y-6">
+                    <div class="bg-stone-50 rounded-xl p-4 border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <span class="text-xs text-stone-500 block">現場取貨編號</span>
+                            <span id="receipt-order-id" class="text-xl font-mono font-bold text-stone-900 tracking-wider">#ORD-20261112-88</span>
+                        </div>
+                        <div class="sm:text-right">
+                            <span class="inline-flex items-center gap-1.5 text-xs font-bold bg-amber-100 text-amber-800 px-3 py-1 rounded-full">
+                                <i data-lucide="banknote" class="w-3.5 h-3.5"></i>
+                                付款方式：現場付現
+                            </span>
+                            <span id="receipt-timestamp" class="block text-[11px] text-stone-400 mt-1">建立時間：2026/11/12 17:43</span>
+                        </div>
+                    </div>
+
+                    <!-- 取貨人資料摘要 -->
+                    <div class="grid grid-cols-2 gap-4 text-sm bg-white border border-stone-100 rounded-xl p-4">
+                        <div>
+                            <span class="text-stone-400 text-xs block">取貨人稱呼</span>
+                            <span id="receipt-name" class="font-bold text-stone-800">陳小姐</span>
+                        </div>
+                        <div>
+                            <span class="text-stone-400 text-xs block">聯絡電話</span>
+                            <span id="receipt-phone" class="font-bold text-stone-800">0912-345-678</span>
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <span class="text-stone-400 text-xs block">預計取貨時段</span>
+                            <span id="receipt-time" class="font-bold text-amber-700">今日 16:00 - 18:00</span>
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <span class="text-stone-400 text-xs block">備註事項</span>
+                            <span id="receipt-note" class="text-stone-700">無</span>
+                        </div>
+                    </div>
+
+                    <!-- 商品勾選明細表格 -->
+                    <div>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-stone-400 mb-2.5">預訂商品明細列表</h3>
+                        <div class="border border-stone-200 rounded-xl overflow-hidden">
+                            <table class="w-full text-sm text-left">
+                                <thead class="bg-stone-50 text-stone-500 border-b border-stone-200 text-xs">
+                                    <tr>
+                                        <th class="py-2.5 px-4 font-medium">商品名稱</th>
+                                        <th class="py-2.5 px-3 font-medium text-center">單價</th>
+                                        <th class="py-2.5 px-3 font-medium text-center">數量</th>
+                                        <th class="py-2.5 px-4 font-medium text-right">小計</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="receipt-items-body" class="divide-y divide-stone-100">
+                                    <!-- JS 動態填入 -->
+                                </tbody>
+                                <tfoot class="bg-amber-50/70 border-t border-stone-200">
+                                    <tr>
+                                        <td colspan="3" class="py-3.5 px-4 font-bold text-stone-800 text-right">現場應付現金總額：</td>
+                                        <td class="py-3.5 px-4 font-bold text-lg text-amber-700 text-right">NT$ <span id="receipt-total">0</span></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 操作按鈕列 (列印 / 複製清單文字 / 返回重選) -->
+                    <div class="no-print pt-2 flex flex-col sm:flex-row gap-3">
+                        <button type="button" onclick="window.print()"
+                            class="flex-1 py-2.5 px-4 bg-stone-800 hover:bg-stone-900 text-white text-sm font-medium rounded-xl transition flex items-center justify-center gap-2">
+                            <i data-lucide="printer" class="w-4 h-4"></i>
+                            <span>列印 / 存成 PDF 憑證</span>
+                        </button>
+                        <button type="button" onclick="copyReceiptText()" id="copy-btn"
+                            class="flex-1 py-2.5 px-4 bg-amber-100 hover:bg-amber-200 text-amber-900 text-sm font-medium rounded-xl transition flex items-center justify-center gap-2">
+                            <i data-lucide="copy" class="w-4 h-4"></i>
+                            <span>複製清單文字</span>
+                        </button>
+                        <button type="button" onclick="backToForm()"
+                            class="py-2.5 px-4 border border-stone-300 hover:bg-stone-50 text-stone-600 text-sm font-medium rounded-xl transition flex items-center justify-center gap-1.5">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                            <span>返回重新選購</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== 店家視角：WordPress 後台收到的資料格式預覽 ==================== -->
+            <div class="no-print max-w-2xl mx-auto bg-slate-900 text-slate-200 rounded-2xl p-6 shadow-lg border border-slate-700">
+                <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-700/80">
+                    <div class="flex items-center gap-2.5">
+                        <span class="px-2.5 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-md text-xs font-bold">
+                            店家後台視角預覽
+                        </span>
+                        <h3 class="font-bold text-white text-sm sm:text-base">WordPress 表單後台 / 通知信收到的內容</h3>
+                    </div>
+                    <i data-lucide="mail-check" class="w-5 h-5 text-indigo-400"></i>
+                </div>
+                <p class="text-xs text-slate-400 mb-3 leading-relaxed">
+                    當客人按下送出後，您的 WordPress 後台（如 Fluent Forms 列表）與老闆的 Email 信箱會即時收到以下結構化資料，店員可直接照單備貨：
+                </p>
+                <pre id="admin-backend-preview" class="bg-slate-950 text-emerald-400 p-4 rounded-xl text-xs font-mono overflow-x-auto leading-relaxed border border-slate-800"></pre>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- 頁尾 -->
+    <footer class="no-print bg-white border-t border-stone-200 mt-12 py-6 text-center text-xs text-stone-400">
+        <p>此為 WordPress「表單勾選清單（無購物車、無會員系統、現場付現）」概念互動預覽頁面</p>
+    </footer>
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        // 1. 範例商品資料庫
+        const products = [
+            {
+                id: 'p1',
+                name: '烤鴨🥢半鴨 ',
+                desc: '兩吃（1-2人份，附餅皮一份)',
+                price: 350,
+                tag: '人氣 NO.1',
+                emoji: '🦆',
+                bgColor: 'bg-amber-50'
+            },
+            {
+                id: 'p2',
+                name: '烤鴨🥢半鴨',
+                desc: '全炒（加九層塔）',
+                price: 320,
+                tag: '每日限量',
+                emoji: '🦆',
+                bgColor: 'bg-emerald-50'
+            },
+            {
+                id: 'p3',
+                name: '烤鴨🥢半鴨',
+                desc: '剁盤（附醬包）',
+                price: 320,
+                tag: '店長推薦',
+                emoji: '🦆',
+                bgColor: 'bg-orange-50'
+            },
+            {
+                id: 'p4',
+                name: '烤鴨🥢全鴨',
+                desc: '兩吃（3-4人份，附餅皮兩份)',
+                price: 599,
+                tag: '',
+                emoji: '🦆',
+                bgColor: 'bg-yellow-50'
+            },
+            {
+                id: 'p5',
+                name: '烤鴨🥢全鴨',
+                desc: '全炒（加九層塔）',
+                price: 570,
+                tag: '',
+                emoji: '🦆',
+                bgColor: 'bg-stone-100'
+            },
+            {
+                id: 'p6',
+                name: '烤鴨🥢全鴨',
+                desc: '剁盤（附醬包）',
+                price: 570,
+                tag: '',
+                emoji: '🦆',
+                bgColor: 'bg-stone-100'
+            },
+            {
+                id: 'p7',
+                name: '烤鵝🥢1/4鵝',
+                desc: '兩吃（1-2人份，附餅皮一份)',
+                price: 350,
+                tag: '',
+                emoji: '🦢',
+                bgColor: 'bg-stone-100'
+            },
+            {
+                id: 'p8',
+                name: '烤鵝🥢1/4鵝',
+                desc: '全炒（加九層塔）',
+                price: 330,
+                tag: '',
+                emoji: '🦢',
+                bgColor: 'bg-stone-100'
+            },
+            {
+                id: 'p9',
+                name: '烤鵝🥢半鵝',
+                desc: '兩吃（3-4人份，附餅皮兩份)',
+                price: 650,
+                tag: '',
+                emoji: '🦢',
+                bgColor: 'bg-stone-100'
+            },
+            {
+                id: 'p10',
+                name: '烤鵝🥢半鵝',
+                desc: '全炒（加九層塔）',
+                price: 600,
+                tag: '',
+                emoji: '🦢',
+                bgColor: 'bg-stone-100'
+            },
+            {
+                id: 'p11',
+                name: '烤鵝🥢全鵝',
+                desc: '兩吃（6-8人份，附餅皮三份)',
+                price: 1199,
+                tag: '',
+                emoji: '🦢',
+                bgColor: 'bg-stone-100'
+            },
+            {
+                id: 'p12',
+                name: '烤鵝🥢全鵝',
+                desc: '全炒（加九層塔）',
+                price: 1150,
+                tag: '派對首選',
+                emoji: '🦢',
+                bgColor: 'bg-stone-100'
+            },
+
+        ];
+
+        // 儲存各商品目前選擇的數量 { p1: 0, p2: 0, ... }
+        let quantities = {};
+        products.forEach(p => quantities[p.id] = 0);
+
+        // 初始化頁面
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProductList();
+            updateSummary();
+            lucide.createIcons();
+        });
+
+        // 2. 渲染商品選購卡片
+        function renderProductList() {
+            const container = document.getElementById('product-list');
+            container.innerHTML = products.map(product => {
+                const qty = quantities[product.id];
+                const isSelected = qty > 0;
+                return `
+                <div id="card-${product.id}" class="bg-white rounded-2xl p-4 border transition-all duration-200 flex items-center justify-between gap-3.5 ${isSelected ? 'border-amber-500 ring-2 ring-amber-500/15 shadow-sm' : 'border-stone-200 hover:border-stone-300'}">
+                    <!-- 商品圖示區塊 -->
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl ${product.bgColor} flex items-center justify-center text-3xl sm:text-4xl shrink-0 select-none">
+                        ${product.emoji}
+                    </div>
+
+                    <!-- 商品名稱與說明 -->
+                    <div class="flex-grow min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <h3 class="font-bold text-stone-800 text-sm sm:text-base truncate">${product.name}</h3>
+                            ${product.tag ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800 shrink-0">${product.tag}</span>` : ''}
+                        </div>
+                        <p class="text-xs text-stone-500 line-clamp-2 mt-1 leading-relaxed">${product.desc}</p>
+                        <div class="mt-2 font-bold text-amber-700 text-sm sm:text-base">
+                            NT$ ${product.price}
+                        </div>
+                    </div>
+
+                    <!-- 數量增減控制器 (- 0 +) -->
+                    <div class="flex items-center gap-1.5 sm:gap-2 bg-stone-50 p-1 rounded-xl border border-stone-200 shrink-0">
+                        <button type="button" onclick="changeQty('${product.id}', -1)" aria-label="減少數量"
+                            class="w-8 h-8 rounded-lg flex items-center justify-center text-stone-600 hover:bg-white hover:shadow-sm active:scale-95 transition disabled:opacity-30"
+                            ${qty === 0 ? 'disabled' : ''}>
+                            <i data-lucide="minus" class="w-4 h-4"></i>
+                        </button>
+                        <span id="qty-display-${product.id}" class="w-6 text-center font-bold text-sm sm:text-base ${isSelected ? 'text-amber-700' : 'text-stone-700'}">
+                            ${qty}
+                        </span>
+                        <button type="button" onclick="changeQty('${product.id}', 1)" aria-label="增加數量"
+                            class="w-8 h-8 rounded-lg bg-amber-600 text-white hover:bg-amber-700 shadow-sm active:scale-95 transition flex items-center justify-center">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        // 3. 調整數量邏輯
+        function changeQty(productId, delta) {
+            const newQty = Math.max(0, (quantities[productId] || 0) + delta);
+            quantities[productId] = newQty;
+            
+            // 隱藏錯誤提示
+            document.getElementById('error-banner').classList.add('hidden');
+            
+            renderProductList();
+            updateSummary();
+        }
+
+        // 清空所有數量
+        function resetQuantities() {
+            products.forEach(p => quantities[p.id] = 0);
+            renderProductList();
+            updateSummary();
+        }
+
+        // 4. 即時更新右側「已選購明細預覽」與「總金額」
+        function updateSummary() {
+            const summaryContainer = document.getElementById('selected-summary-list');
+            const totalPriceEl = document.getElementById('total-price');
+            const totalItemsEl = document.getElementById('total-items-count');
+
+            let totalAmount = 0;
+            let totalCount = 0;
+            const selectedItems = [];
+
+            products.forEach(p => {
+                const qty = quantities[p.id];
+                if (qty > 0) {
+                    const subtotal = p.price * qty;
+                    totalAmount += subtotal;
+                    totalCount += qty;
+                    selectedItems.push({ ...p, qty, subtotal });
+                }
+            });
+
+            totalPriceEl.textContent = totalAmount.toLocaleString();
+            totalItemsEl.textContent = totalCount;
+
+            if (selectedItems.length === 0) {
+                summaryContainer.innerHTML = `<p class="text-sm text-stone-400 text-center py-4">尚未選擇任何商品，請從左側點選</p>`;
+            } else {
+                summaryContainer.innerHTML = selectedItems.map(item => `
+                    <div class="flex items-center justify-between text-sm py-1">
+                        <div class="flex items-center gap-2 min-w-0 pr-2">
+                            <span class="font-medium text-stone-800 truncate">${item.name}</span>
+                            <span class="text-xs font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded shrink-0">x${item.qty}</span>
+                        </div>
+                        <span class="font-medium text-stone-700 shrink-0">NT$ ${item.subtotal}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // 5. 表單送出與產生「現場付現憑證」
+        let latestReceiptText = '';
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const errorBanner = document.getElementById('error-banner');
+            const errorMessage = document.getElementById('error-message');
+
+            // 檢查是否有選購商品
+            const selectedItems = products
+                .filter(p => quantities[p.id] > 0)
+                .map(p => ({ ...p, qty: quantities[p.id], subtotal: p.price * quantities[p.id] }));
+
+            if (selectedItems.length === 0) {
+                errorMessage.textContent = '您還沒有選擇任何商品喔！請至少勾選一項商品。';
+                errorBanner.classList.remove('hidden');
+                errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            // 檢查必填欄位
+            const name = document.getElementById('customer-name').value.trim();
+            const phone = document.getElementById('customer-phone').value.trim();
+            const pickupTime = document.getElementById('pickup-time').value;
+            const note = document.getElementById('customer-note').value.trim() || '無';
+
+            if (!name || !phone) {
+                errorMessage.textContent = '請填寫「您的姓名 / 稱呼」與「聯絡手機」，方便現場人員核對取貨。';
+                errorBanner.classList.remove('hidden');
+                errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            errorBanner.classList.add('hidden');
+
+            // 產生隨機取貨單號與時間
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+            const randomNum = Math.floor(10 + Math.random() * 89);
+            const orderId = `#ORD-${dateStr}-${randomNum}`;
+            const timeStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            const totalAmount = selectedItems.reduce((sum, item) => sum + item.subtotal, 0);
+
+            // 填入憑證畫面資料
+            document.getElementById('receipt-order-id').textContent = orderId;
+            document.getElementById('receipt-timestamp').textContent = `建立時間：${timeStr}`;
+            document.getElementById('receipt-name').textContent = name;
+            document.getElementById('receipt-phone').textContent = phone;
+            document.getElementById('receipt-time').textContent = pickupTime;
+            document.getElementById('receipt-note').textContent = note;
+            document.getElementById('receipt-total').textContent = totalAmount.toLocaleString();
+
+            const tbody = document.getElementById('receipt-items-body');
+            tbody.innerHTML = selectedItems.map(item => `
+                <tr>
+                    <td class="py-3 px-4 font-medium text-stone-800">${item.name}</td>
+                    <td class="py-3 px-3 text-center text-stone-500">$${item.price}</td>
+                    <td class="py-3 px-3 text-center font-bold text-stone-800">${item.qty}</td>
+                    <td class="py-3 px-4 text-right font-medium text-stone-800">$${item.subtotal}</td>
+                </tr>
+            `).join('');
+
+            // 組裝純文字版本（供複製與店家後台預覽）
+            const itemsTextList = selectedItems.map(i => `  - ${i.name} x ${i.qty} 份 = NT$ ${i.subtotal}`).join('\n');
+            latestReceiptText = 
+`【晨光手作烘焙 - 現場取貨付現清單】
+取貨編號：${orderId}
+建立時間：${timeStr}
+----------------------------------
+取貨人：${name} (${phone})
+預計取貨：${pickupTime}
+備註事項：${note}
+----------------------------------
+預訂明細：
+${itemsTextList}
+----------------------------------
+現場應付現金總額：NT$ ${totalAmount.toLocaleString()}
+付款狀態：尚未付款（現場付現）`;
+
+            document.getElementById('admin-backend-preview').textContent = latestReceiptText;
+
+            // 切換視圖至憑證頁面
+            document.getElementById('order-form-view').classList.add('hidden');
+            document.getElementById('receipt-view').classList.remove('hidden');
+
+            // 更新上方步驟指示燈
+            updateStepBadges(2);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 6. 複製清單純文字（相容 iframe 環境）
+        function copyReceiptText() {
+            const tempTextarea = document.createElement('textarea');
+            tempTextarea.value = latestReceiptText;
+            document.body.appendChild(tempTextarea);
+            tempTextarea.select();
+            try {
+                document.execCommand('copy');
+                const copyBtn = document.getElementById('copy-btn');
+                const originalHTML = copyBtn.innerHTML;
+                copyBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i><span>已複製清單文字！</span>`;
+                copyBtn.classList.replace('bg-amber-100', 'bg-emerald-100');
+                copyBtn.classList.replace('text-amber-900', 'text-emerald-800');
+                lucide.createIcons();
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalHTML;
+                    copyBtn.classList.replace('bg-emerald-100', 'bg-amber-100');
+                    copyBtn.classList.replace('text-emerald-800', 'text-amber-900');
+                    lucide.createIcons();
+                }, 2000);
+            } catch (err) {
+                console.error('複製失敗', err);
+            }
+            document.body.removeChild(tempTextarea);
+        }
+
+        // 7. 返回重新選購
+        function backToForm() {
+            document.getElementById('receipt-view').classList.add('hidden');
+            document.getElementById('order-form-view').classList.remove('hidden');
+            updateStepBadges(1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 更新步驟指示器樣式
+        function updateStepBadges(step) {
+            const b1 = document.getElementById('step-badge-1');
+            const b2 = document.getElementById('step-badge-2');
+            if (step === 1) {
+                b1.className = 'flex items-center gap-1.5 font-bold text-amber-700 bg-amber-100/80 px-3.5 py-1.5 rounded-full transition-colors';
+                b1.querySelector('span').className = 'w-5 h-5 rounded-full bg-amber-600 text-white text-xs flex items-center justify-center';
+                b2.className = 'flex items-center gap-1.5 font-medium text-stone-400 bg-stone-100 px-3.5 py-1.5 rounded-full transition-colors';
+                b2.querySelector('span').className = 'w-5 h-5 rounded-full bg-stone-300 text-white text-xs flex items-center justify-center';
+            } else {
+                b1.className = 'flex items-center gap-1.5 font-medium text-stone-500 bg-stone-100 px-3.5 py-1.5 rounded-full transition-colors';
+                b1.querySelector('span').className = 'w-5 h-5 rounded-full bg-stone-400 text-white text-xs flex items-center justify-center';
+                b2.className = 'flex items-center gap-1.5 font-bold text-emerald-700 bg-emerald-100/80 px-3.5 py-1.5 rounded-full transition-colors';
+                b2.querySelector('span').className = 'w-5 h-5 rounded-full bg-emerald-600 text-white text-xs flex items-center justify-center';
+            }
+        }
+    </script>
+</body>
+</html>
